@@ -9,13 +9,15 @@
 
 package org.scalajs.cli
 
-import org.scalajs.core.ir.ScalaJSVersions
+import org.scalajs.ir.ScalaJSVersions
 
-import org.scalajs.core.tools.io._
-import org.scalajs.core.tools.logging._
+import org.scalajs.io._
 
-import org.scalajs.core.tools.linker._
-import org.scalajs.core.tools.linker.standard._
+import org.scalajs.logging._
+
+import org.scalajs.linker._
+import org.scalajs.linker.irio._
+import org.scalajs.linker.standard._
 
 import CheckedBehavior.Compliant
 
