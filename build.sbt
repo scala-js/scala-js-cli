@@ -33,7 +33,7 @@ inThisBuild(Def.settings(
   scalaVersion := crossScalaVersions.value.head,
   scalacOptions ++= Seq("-deprecation", "-feature", "-Xfatal-warnings"),
 
-  scalaJSVersion := "1.0.0-M2",
+  scalaJSVersion := "1.0.0-M3",
   scalaJSBinaryVersion := binaryScalaJSVersion(scalaJSVersion.value),
 
   scalaJSScalaVersions := Seq(
@@ -98,7 +98,7 @@ lazy val `scalajs-cli`: Project = project.in(file(".")).
     commonSettings,
 
     libraryDependencies ++= Seq(
-      "org.scala-js" %% "scalajs-tools" % scalaJSVersion.value,
+      "org.scala-js" %% "scalajs-linker" % scalaJSVersion.value,
       "com.github.scopt" %% "scopt" % "3.5.0",
     ),
 

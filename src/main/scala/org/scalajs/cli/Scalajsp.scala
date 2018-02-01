@@ -9,12 +9,14 @@
 
 package org.scalajs.cli
 
-import org.scalajs.core.ir
-import ir.ScalaJSVersions
-import ir.Trees.{Tree, ClassDef}
-import ir.Printers.IRTreePrinter
+import org.scalajs.ir.ScalaJSVersions
+import org.scalajs.ir.Trees.{Tree, ClassDef}
+import org.scalajs.ir.Printers.IRTreePrinter
 
-import org.scalajs.core.tools.io._
+import org.scalajs.io._
+
+import org.scalajs.linker.irio._
+
 import scala.collection.immutable.Seq
 
 import java.io.{Console => _, _}
