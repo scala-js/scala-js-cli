@@ -91,7 +91,7 @@ object Scalajsp {
     throw new AssertionError("unreachable")
   }
 
-  private def readFromFile(fileName: String) = {
+  private def readFromFile(fileName: String): VirtualScalaJSIRFile = {
     val file = new File(fileName)
 
     if (!file.exists)
@@ -99,25 +99,16 @@ object Scalajsp {
     else if (!file.canRead)
       fail(s"Unable to read file: $fileName")
     else
-      FileVirtualScalaJSIRFile(file)
+      new FileVirtualScalaJSIRFile(file, file.getName)
   }
 
-  private def readFromJar(jar: File, name: String) = {
-    val jarFile =
-      try { new ZipFile(jar) }
-      catch { case _: FileNotFoundException => fail(s"No such JAR: $jar") }
-    try {
-      val entry = jarFile.getEntry(name)
-      if (entry == null) {
-        fail(s"No such file in jar: $name")
-      } else {
-        val name = jarFile.getName + "#" + entry.getName
-        val content =
-          IO.readInputStreamToByteArray(jarFile.getInputStream(entry))
-        new MemVirtualSerializedScalaJSIRFile(name).withContent(content)
-      }
-    } finally {
-      jarFile.close()
+  private def readFromJar(jar: File, name: String): VirtualScalaJSIRFile = {
+    /* This could be more efficient if we only read the relevant entry. But it
+     * probably does not matter, and this implementation is very simple.
+     */
+    val jarFile = new FileVirtualJarScalaJSIRContainer(jar)
+    jarFile.sjsirFiles.find(_.relativePath == name).getOrElse {
+      fail(s"No such file in jar: $name")
     }
   }
 
