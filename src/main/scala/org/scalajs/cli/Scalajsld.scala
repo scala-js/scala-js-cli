@@ -17,7 +17,6 @@ import org.scalajs.logging._
 
 import org.scalajs.linker._
 import org.scalajs.linker.irio._
-import org.scalajs.linker.standard._
 
 import CheckedBehavior.Compliant
 
@@ -33,7 +32,7 @@ object Scalajsld {
       moduleInitializers: Seq[ModuleInitializer] = Seq.empty,
       output: File = null,
       semantics: Semantics = Semantics.Defaults,
-      outputMode: OutputMode = OutputMode.ECMAScript51Isolated,
+      esFeatures: ESFeatures = ESFeatures.Defaults,
       moduleKind: ModuleKind = ModuleKind.NoModule,
       noOpt: Boolean = false,
       fullOpt: Boolean = false,
@@ -53,14 +52,6 @@ object Scalajsld {
         throw new IllegalArgumentException(s"$s is not a valid main method")
       ModuleInitializer.mainMethodWithArgs(s.substring(0, lastDot),
           s.substring(lastDot + 1))
-    }
-  }
-
-  private implicit object OutputModeRead extends scopt.Read[OutputMode] {
-    val arity = 1
-    val reads = { (s: String) =>
-      OutputMode.All.find(_.toString() == s).getOrElse(
-          throw new IllegalArgumentException(s"$s is not a valid output mode"))
     }
   }
 
@@ -110,9 +101,9 @@ object Scalajsld {
           c.semantics.withAsInstanceOfs(Compliant))
         }
         .text("Use compliant asInstanceOfs")
-      opt[OutputMode]('m', "outputMode")
-        .action { (mode, c) => c.copy(outputMode = mode) }
-        .text("Output mode " + OutputMode.All.mkString("(", ", ", ")"))
+      opt[Unit]("es2015")
+        .action { (_, c) => c.copy(esFeatures = c.esFeatures.withUseECMAScript2015(true)) }
+        .text("Use ECMAScript 2015")
       opt[ModuleKind]('k', "moduleKind")
         .action { (kind, c) => c.copy(moduleKind = kind) }
         .text("Module kind " + ModuleKind.All.mkString("(", ", ", ")"))
@@ -165,7 +156,7 @@ object Scalajsld {
       val config = StandardLinker.Config()
         .withSemantics(semantics)
         .withModuleKind(options.moduleKind)
-        .withOutputMode(options.outputMode)
+        .withESFeatures(options.esFeatures)
         .withCheckIR(options.checkIR)
         .withOptimizer(!options.noOpt)
         .withParallel(true)
@@ -177,10 +168,11 @@ object Scalajsld {
 
       val linker = StandardLinker(config)
       val logger = new ScalaConsoleLogger(options.logLevel)
-      val outFile = WritableFileVirtualJSFile(options.output)
+      val outFile = new WritableFileVirtualBinaryFile(options.output)
+      val output = LinkerOutput(outFile)
       val cache = (new IRFileCache).newCache
 
-      linker.link(cache.cached(irContainers), moduleInitializers, outFile,
+      linker.link(cache.cached(irContainers), moduleInitializers, output,
           logger)
     }
   }
