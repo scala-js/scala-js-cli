@@ -53,6 +53,7 @@ inThisBuild(Def.settings(
     "2.12.4",
     "2.12.5",
     "2.12.6",
+    "2.12.7",
   ),
 
   homepage := Some(url("https://www.scala-js.org/")),
