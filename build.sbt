@@ -33,7 +33,7 @@ inThisBuild(Def.settings(
   scalaVersion := crossScalaVersions.value.head,
   scalacOptions ++= Seq("-deprecation", "-feature", "-Xfatal-warnings"),
 
-  scalaJSVersion := "1.0.0-M5",
+  scalaJSVersion := "1.0.0-M6",
   scalaJSBinaryVersion := binaryScalaJSVersion(scalaJSVersion.value),
 
   scalaJSScalaVersions := Seq(
