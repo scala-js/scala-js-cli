@@ -33,7 +33,7 @@ inThisBuild(Def.settings(
   scalaVersion := crossScalaVersions.value.head,
   scalacOptions ++= Seq("-deprecation", "-feature", "-Xfatal-warnings"),
 
-  scalaJSVersion := "1.0.0-M5",
+  scalaJSVersion := "1.0.0-M6",
   scalaJSBinaryVersion := binaryScalaJSVersion(scalaJSVersion.value),
 
   scalaJSScalaVersions := Seq(
@@ -53,6 +53,7 @@ inThisBuild(Def.settings(
     "2.12.4",
     "2.12.5",
     "2.12.6",
+    "2.12.7",
   ),
 
   homepage := Some(url("https://www.scala-js.org/")),
