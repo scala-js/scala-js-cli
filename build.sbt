@@ -26,7 +26,7 @@ def binaryScalaJSVersion(full: String): String = {
 }
 
 inThisBuild(Def.settings(
-  version := "1.0.0-SNAPSHOT",
+  version := "1.0.0-M7",
   organization := "org.scala-js",
 
   crossScalaVersions := Seq("2.12.8", "2.11.12"),
