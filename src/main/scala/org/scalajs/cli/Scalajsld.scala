@@ -22,6 +22,10 @@ import CheckedBehavior.Compliant
 
 import scala.collection.immutable.Seq
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import java.io.File
 import java.net.URI
 
@@ -172,8 +176,9 @@ object Scalajsld {
       val output = LinkerOutput(outFile)
       val cache = (new IRFileCache).newCache
 
-      linker.link(cache.cached(irContainers), moduleInitializers, output,
-          logger)
+      val future = linker.link(cache.cached(irContainers), moduleInitializers,
+          output, logger)
+      Await.result(future, Duration.Inf)
     }
   }
 }
