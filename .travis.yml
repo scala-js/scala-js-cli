@@ -4,7 +4,7 @@ scala:
   - 2.11.12
   - 2.12.8
 jdk:
-  - oraclejdk8
+  - openjdk8
 env:
   - SCALAJS_VERSION=1.0.0-M7
 script:
