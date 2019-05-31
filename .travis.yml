@@ -6,7 +6,7 @@ scala:
 jdk:
   - openjdk8
 env:
-  - SCALAJS_VERSION=1.0.0-M7
+  - SCALAJS_VERSION=1.0.0-M8
 script:
   - ./scripts/assemble-cli.sh $SCALAJS_VERSION $TRAVIS_SCALA_VERSION
 cache:
