@@ -11,8 +11,6 @@ package org.scalajs.cli
 
 import org.scalajs.ir.ScalaJSVersions
 
-import org.scalajs.io._
-
 import org.scalajs.logging._
 
 import org.scalajs.linker._
@@ -22,7 +20,7 @@ import CheckedBehavior.Compliant
 
 import scala.collection.immutable.Seq
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -149,8 +147,7 @@ object Scalajsld {
     }
 
     for (options <- parser.parse(args, Options())) {
-      val classpath = options.stdLib.toList ++ options.cp
-      val irContainers = FileScalaJSIRContainer.fromClasspath(classpath)
+      val classpath = (options.stdLib.toList ++ options.cp).map(_.toPath())
       val moduleInitializers = options.moduleInitializers
 
       val semantics =
@@ -172,13 +169,14 @@ object Scalajsld {
 
       val linker = StandardLinker(config)
       val logger = new ScalaConsoleLogger(options.logLevel)
-      val outFile = new WritableFileVirtualBinaryFile(options.output)
+      val outFile = new WritableFileVirtualBinaryFile(options.output.toPath())
       val output = LinkerOutput(outFile)
-      val cache = (new IRFileCache).newCache
 
-      val future = linker.link(cache.cached(irContainers), moduleInitializers,
-          output, logger)
-      Await.result(future, Duration.Inf)
+      val result = FileScalaJSIRContainer
+        .fromClasspath(classpath)
+        .flatMap(containers => Future.traverse(containers)(_.sjsirFiles).map(_.flatten))
+        .flatMap(linker.link(_, moduleInitializers, output, logger))
+      Await.result(result, Duration.Inf)
     }
   }
 }
