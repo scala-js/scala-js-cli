@@ -14,7 +14,7 @@ import org.scalajs.ir.ScalaJSVersions
 import org.scalajs.logging._
 
 import org.scalajs.linker._
-import org.scalajs.linker.irio._
+import org.scalajs.linker.interface._
 
 import CheckedBehavior.Compliant
 
@@ -154,7 +154,7 @@ object Scalajsld {
         if (options.fullOpt) options.semantics.optimized
         else options.semantics
 
-      val config = StandardLinker.Config()
+      val config = StandardConfig()
         .withSemantics(semantics)
         .withModuleKind(options.moduleKind)
         .withESFeatures(options.esFeatures)
@@ -167,14 +167,16 @@ object Scalajsld {
         .withPrettyPrint(options.prettyPrint)
         .withBatchMode(true)
 
-      val linker = StandardLinker(config)
+      val linker = StandardImpl.linker(config)
       val logger = new ScalaConsoleLogger(options.logLevel)
-      val outFile = new WritableFileVirtualBinaryFile(options.output.toPath())
+      val outFile = PathOutputFile(options.output.toPath())
       val output = LinkerOutput(outFile)
 
-      val result = FileScalaJSIRContainer
+      val cache = StandardImpl.irFileCache().newCache
+
+      val result = PathIRContainer
         .fromClasspath(classpath)
-        .flatMap(containers => Future.traverse(containers)(_.sjsirFiles).map(_.flatten))
+        .flatMap(containers => cache.cached(containers._1))
         .flatMap(linker.link(_, moduleInitializers, output, logger))
       Await.result(result, Duration.Inf)
     }
