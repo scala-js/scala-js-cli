@@ -9,14 +9,16 @@
 
 package org.scalajs.cli
 
-import org.scalajs.ir.Definitions
 import org.scalajs.ir.ScalaJSVersions
 import org.scalajs.ir.Trees.{Tree, ClassDef}
 import org.scalajs.ir.Printers.IRTreePrinter
 
-import org.scalajs.linker.irio._
+import org.scalajs.linker._
+import org.scalajs.linker.interface._
+import org.scalajs.linker.interface.unstable.IRFileImpl
+import org.scalajs.linker.standard._
 
-import scala.collection.immutable.Seq
+import scala.collection.immutable
 
 import scala.concurrent._
 import scala.concurrent.duration.Duration
@@ -32,7 +34,7 @@ object Scalajsp {
 
   private case class Options(
       jar: Option[File] = None,
-      fileNames: Seq[String] = Seq.empty
+      fileNames: immutable.Seq[String] = Nil
   )
 
   def main(args: Array[String]): Unit = {
@@ -75,14 +77,12 @@ object Scalajsp {
 
   private def printSupported(): Unit = {
     import ScalaJSVersions._
-    println(s"Emitted Scala.js IR version is: $binaryEmitted")
-    println("Supported Scala.js IR versions are")
-    binarySupported.foreach(v => println(s"* $v"))
+    println(s"Scala.js IR library version is: $current")
+    println(s"Supports Scala.js IR versions up to $binaryEmitted")
   }
 
-  private def displayFileContent(vfile: VirtualScalaJSIRFile,
-      opts: Options): Unit = {
-    val tree = Await.result(vfile.tree, Duration.Inf)
+  private def displayFileContent(vfile: IRFile, opts: Options): Unit = {
+    val tree = Await.result(IRFileImpl.fromIRFile(vfile).tree, Duration.Inf)
     new IRTreePrinter(stdout).print(tree)
     stdout.write('\n')
     stdout.flush()
@@ -98,7 +98,7 @@ object Scalajsp {
     throw new AssertionError("unreachable")
   }
 
-  private def readFromFile(fileName: String): Future[VirtualScalaJSIRFile] = {
+  private def readFromFile(fileName: String): Future[IRFile] = {
     val file = new File(fileName)
 
     if (!file.exists) {
@@ -106,24 +106,20 @@ object Scalajsp {
     } else if (!file.canRead) {
       fail(s"Unable to read file: $fileName")
     } else {
-      for {
-        container <- FileScalaJSIRContainer.fromSingleFile(file.toPath())
-        sjsirFiles <- container.sjsirFiles
-      } yield {
-        sjsirFiles.head
-      }
+      PathIRFile(file.toPath())
     }
   }
 
-  private def readFromJar(jar: File, name: String): Future[VirtualScalaJSIRFile] = {
+  private def readFromJar(jar: File, name: String): Future[IRFile] = {
     /* This could be more efficient if we only read the relevant entry. But it
      * probably does not matter, and this implementation is very simple.
      */
 
-    def findRequestedClass(sjsirFiles: List[VirtualScalaJSIRFile]): Future[VirtualScalaJSIRFile] = {
-      Future.traverse(sjsirFiles) { ir =>
+    def findRequestedClass(sjsirFiles: Seq[IRFile]): Future[IRFile] = {
+      Future.traverse(sjsirFiles) { irFile =>
+        val ir = IRFileImpl.fromIRFile(irFile)
         ir.entryPointsInfo.map { i =>
-          if (i.encodedName == name || Definitions.decodeClassName(i.encodedName) == name) Success(Some(ir))
+          if (i.className.nameString == name) Success(Some(ir))
           else Success(None)
         }.recover { case t => Failure(t) }
       }.map { irs =>
@@ -135,10 +131,12 @@ object Scalajsp {
       }
     }
 
+    val cache = StandardImpl.irFileCache().newCache
+
     for {
-      jarFile <- FileScalaJSIRContainer.fromJar(jar.toPath())
-      sjsirFiles <- jarFile.sjsirFiles
-      requestedFile <- findRequestedClass(sjsirFiles)
+      (containers, _) <- PathIRContainer.fromClasspath(jar.toPath() :: Nil)
+      irFiles <- cache.cached(containers)
+      requestedFile <- findRequestedClass(irFiles)
     } yield {
       requestedFile
     }
