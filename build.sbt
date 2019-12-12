@@ -4,26 +4,11 @@ val scalaJSVersion =
 val scalaJSScalaVersions =
   settingKey[Seq[String]]("All the minor versions of Scala for which to build the CLI")
 
-// Computed settings
-val scalaJSBinaryVersion =
-  settingKey[String]("Binary version of Scala.js")
-
 // Custom tasks
 val cliLibJars =
   taskKey[Seq[File]]("All the .jars that must go to the lib/ directory of the CLI")
 val cliPack =
   taskKey[File]("Pack the CLI for the current configuration")
-
-// Duplicated from the Scala.js sbt plugin
-def binaryScalaJSVersion(full: String): String = {
-  val ReleaseVersion = raw"""(\d+)\.(\d+)\.(\d+)""".r
-  val MinorSnapshotVersion = raw"""(\d+)\.(\d+)\.([1-9]\d*)-SNAPSHOT""".r
-  full match {
-    case ReleaseVersion(major, _, _)       => major
-    case MinorSnapshotVersion(major, _, _) => major
-    case _                                 => full
-  }
-}
 
 inThisBuild(Def.settings(
   version := "1.0.0-SNAPSHOT",
@@ -34,7 +19,6 @@ inThisBuild(Def.settings(
   scalacOptions ++= Seq("-deprecation", "-feature", "-Xfatal-warnings"),
 
   scalaJSVersion := "1.0.0-RC2",
-  scalaJSBinaryVersion := binaryScalaJSVersion(scalaJSVersion.value),
 
   scalaJSScalaVersions := Seq(
     "2.11.12",
