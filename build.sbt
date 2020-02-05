@@ -18,7 +18,7 @@ inThisBuild(Def.settings(
   scalaVersion := crossScalaVersions.value.head,
   scalacOptions ++= Seq("-deprecation", "-feature", "-Xfatal-warnings"),
 
-  scalaJSVersion := "1.0.0-RC2",
+  scalaJSVersion := "1.0.0",
 
   scalaJSScalaVersions := Seq(
     "2.11.12",
