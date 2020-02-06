@@ -11,7 +11,7 @@ val cliPack =
   taskKey[File]("Pack the CLI for the current configuration")
 
 inThisBuild(Def.settings(
-  version := "1.0.0",
+  version := "1.0.1-SNAPSHOT",
   organization := "org.scala-js",
 
   crossScalaVersions := Seq("2.12.10", "2.11.12", "2.13.1"),
