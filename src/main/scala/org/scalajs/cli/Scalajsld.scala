@@ -26,6 +26,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.io.File
 import java.net.URI
+import java.nio.file.Path
 
 object Scalajsld {
 
@@ -169,8 +170,19 @@ object Scalajsld {
 
       val linker = StandardImpl.linker(config)
       val logger = new ScalaConsoleLogger(options.logLevel)
-      val outFile = PathOutputFile(options.output.toPath())
-      val output = LinkerOutput(outFile)
+
+      val output = {
+        val js = options.output.toPath()
+        val sm = js.resolveSibling(js.getFileName().toString() + ".map")
+
+        def relURI(f: Path) =
+          new URI(null, null, f.getFileName().toString, null)
+
+        LinkerOutput(PathOutputFile(js))
+          .withSourceMap(PathOutputFile(sm))
+          .withSourceMapURI(relURI(sm))
+          .withJSFileURI(relURI(js))
+      }
 
       val cache = StandardImpl.irFileCache().newCache
 
