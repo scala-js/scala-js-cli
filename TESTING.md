@@ -2,7 +2,7 @@
 
 TODO: We should automate this process
 
-For each major Scala version on a *NIX distro and a Windows distro:
+For each major Scala version on a Windows distro:
 
 1. Download packaged Scala from scala-lang.org
 2. Build a CLI distribution (see [the release process](./RELEASING.md))
