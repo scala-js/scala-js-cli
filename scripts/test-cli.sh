@@ -48,8 +48,9 @@ test -s out || fail "scalajsp bin/Foo$.sjsir: empty output"
 scalajsp bin/Foo\$A.sjsir > out
 test -s out || fail "scalajsp bin/Foo\$A.sjsir: empty output"
 
-scalajsld -o test.js -mm Foo.main bin
+scalajsld -s -o test.js -mm Foo.main bin
 test -s test.js || fail "scalajsld: empty output"
+test -s test.js.map || fail "scalajsld: empty source map"
 
 node test.js > got.run
 cat > want.run <<EOF
