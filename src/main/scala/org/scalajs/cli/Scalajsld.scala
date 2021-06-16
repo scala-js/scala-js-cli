@@ -33,10 +33,13 @@ object Scalajsld {
   private case class Options(
       cp: Seq[File] = Seq.empty,
       moduleInitializers: Seq[ModuleInitializer] = Seq.empty,
-      output: File = null,
+      output: Option[File] = None,
+      outputDir: Option[File] = None,
       semantics: Semantics = Semantics.Defaults,
       esFeatures: ESFeatures = ESFeatures.Defaults,
       moduleKind: ModuleKind = ModuleKind.NoModule,
+      moduleSplitStyle: ModuleSplitStyle = ModuleSplitStyle.FewestModules,
+      outputPatterns: OutputPatterns = OutputPatterns.Defaults,
       noOpt: Boolean = false,
       fullOpt: Boolean = false,
       prettyPrint: Boolean = false,
@@ -66,6 +69,15 @@ object Scalajsld {
     }
   }
 
+  private implicit object ModuleSplitStyleRead extends scopt.Read[ModuleSplitStyle] {
+    val All = List(ModuleSplitStyle.FewestModules, ModuleSplitStyle.SmallestModules)
+    val arity = 1
+    val reads = { (s: String) =>
+      All.find(_.toString() == s).getOrElse(
+          throw new IllegalArgumentException(s"$s is not a valid module split style"))
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     val parser = new scopt.OptionParser[Options]("scalajsld") {
       head("scalajsld", ScalaJSVersions.current)
@@ -81,15 +93,26 @@ object Scalajsld {
         .text("Execute the specified main(Array[String]) method on startup")
       opt[File]('o', "output")
         .valueName("<file>")
-        .required()
-        .action { (x, c) => c.copy(output = x) }
-        .text("Output file of linker (required)")
+        .action { (x, c) => c.copy(output = Some(x)) }
+        .text("Output file of linker (deprecated)")
+      opt[File]('z', "outputDir")
+        .valueName("<dir>")
+        .action { (x, c) => c.copy(outputDir = Some(x)) }
+        .text("Output directory of linker (required)")
       opt[Unit]('f', "fastOpt")
         .action { (_, c) => c.copy(noOpt = false, fullOpt = false) }
         .text("Optimize code (this is the default)")
       opt[Unit]('n', "noOpt")
         .action { (_, c) => c.copy(noOpt = true, fullOpt = false) }
         .text("Don't optimize code")
+      opt[ModuleSplitStyle]("moduleSplitStyle")
+        .action { (x, c) => c.copy(moduleSplitStyle = x) }
+        .text("Module splitting style " + ModuleSplitStyleRead.All.mkString("(", ", ", ")"))
+      opt[String]("jsFilePattern")
+        .action { (x, c) => c.copy(outputPatterns = OutputPatterns.fromJSFile(x)) }
+        .text("Pattern for JS file names (default: `%s.js`). " +
+            "Expects a printf-style pattern with a single placeholder for the module ID. " +
+            "A typical use case is changing the file extension, e.g. `%.mjs` for Node.js modules.")
       opt[Unit]('u', "fullOpt")
         .action { (_, c) => c.copy(noOpt = false, fullOpt = true) }
         .text("Fully optimize code (uses Google Closure Compiler)")
@@ -143,6 +166,17 @@ object Scalajsld {
       help("help")
         .abbr("h")
         .text("prints this usage text")
+      checkConfig { c =>
+        if (c.output.isDefined) {
+          reportWarning("using a single file as output (--output) is deprecated since Scala.js 1.3.0." +
+            " Use --outputDir instead.")
+        }
+
+        if (c.outputDir.isDefined == c.output.isDefined)
+          failure("exactly one of --output or --outputDir have to be defined")
+        else
+          success
+      }
 
       override def showUsageOnError = true
     }
@@ -158,6 +192,8 @@ object Scalajsld {
       val config = StandardConfig()
         .withSemantics(semantics)
         .withModuleKind(options.moduleKind)
+        .withModuleSplitStyle(options.moduleSplitStyle)
+        .withOutputPatterns(options.outputPatterns)
         .withESFeatures(options.esFeatures)
         .withCheckIR(options.checkIR)
         .withOptimizer(!options.noOpt)
@@ -170,27 +206,53 @@ object Scalajsld {
 
       val linker = StandardImpl.linker(config)
       val logger = new ScalaConsoleLogger(options.logLevel)
-
-      val output = {
-        val js = options.output.toPath()
-        val sm = js.resolveSibling(js.getFileName().toString() + ".map")
-
-        def relURI(f: Path) =
-          new URI(null, null, f.getFileName().toString, null)
-
-        LinkerOutput(PathOutputFile(js))
-          .withSourceMap(PathOutputFile(sm))
-          .withSourceMapURI(relURI(sm))
-          .withJSFileURI(relURI(js))
-      }
-
       val cache = StandardImpl.irFileCache().newCache
 
       val result = PathIRContainer
         .fromClasspath(classpath)
         .flatMap(containers => cache.cached(containers._1))
-        .flatMap(linker.link(_, moduleInitializers, output, logger))
+        .flatMap { irFiles =>
+          (options.output, options.outputDir) match {
+            case (Some(jsFile), None) =>
+              (DeprecatedLinkerAPI: DeprecatedLinkerAPI).link(linker, irFiles.toList, moduleInitializers, jsFile, logger)
+            case (None, Some(outputDir)) =>
+              linker.link(irFiles, moduleInitializers, PathOutputDirectory(outputDir.toPath()), logger)
+            case _ => throw new AssertionError("Either output or outputDir have to be defined.")
+          }
+        }
       Await.result(result, Duration.Inf)
+    }
+  }
+
+  // Covers deprecated api with not deprecated method. Suppresses warning.
+  private abstract class DeprecatedLinkerAPI {
+    def link(linker: Linker,
+        irFiles: Seq[IRFile],
+        moduleInitializers: Seq[ModuleInitializer],
+        linkerOutputFile: File,
+        logger: Logger): Future[Unit]
+  }
+
+  private object DeprecatedLinkerAPI extends DeprecatedLinkerAPI {
+    def apply(): DeprecatedLinkerAPI = this
+
+    @deprecated("Deprecate to silence warnings", "never/always")
+    def link(linker: Linker,
+        irFiles: Seq[IRFile],
+        moduleInitializers: Seq[ModuleInitializer],
+        linkerOutputFile: File,
+        logger: Logger): Future[Unit] = {
+      val js = linkerOutputFile.toPath()
+      val sm = js.resolveSibling(js.getFileName().toString() + ".map")
+
+      def relURI(f: Path) =
+        new URI(null, null, f.getFileName().toString(), null)
+
+      val output = LinkerOutput(PathOutputFile(js))
+        .withSourceMap(PathOutputFile(sm))
+        .withSourceMapURI(relURI(sm))
+        .withJSFileURI(relURI(js))
+      linker.link(irFiles, moduleInitializers, output, logger)
     }
   }
 }

@@ -11,14 +11,14 @@ val cliPack =
   taskKey[File]("Pack the CLI for the current configuration")
 
 inThisBuild(Def.settings(
-  version := "1.0.1-SNAPSHOT",
+  version := "1.5.0-SNAPSHOT",
   organization := "org.scala-js",
 
-  crossScalaVersions := Seq("2.12.10", "2.11.12", "2.13.1"),
+  crossScalaVersions := Seq("2.12.13", "2.11.12", "2.13.5"),
   scalaVersion := crossScalaVersions.value.head,
   scalacOptions ++= Seq("-deprecation", "-feature", "-Xfatal-warnings"),
 
-  scalaJSVersion := "1.0.0",
+  scalaJSVersion := "1.5.0",
 
   scalaJSScalaVersions := Seq(
     "2.11.12",
@@ -32,8 +32,15 @@ inThisBuild(Def.settings(
     "2.12.8",
     "2.12.9",
     "2.12.10",
+    "2.12.11",
+    "2.12.12",
+    "2.12.13",
     "2.13.0",
     "2.13.1",
+    "2.13.2",
+    "2.13.3",
+    "2.13.4",
+    "2.13.5",
   ),
 
   homepage := Some(url("https://www.scala-js.org/")),
