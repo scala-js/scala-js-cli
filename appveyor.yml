@@ -5,8 +5,8 @@ environment:
     SCALAJS_VERSION: 1.7.1
   matrix:
     - SCALA_VERSION: 2.11.12
-    - SCALA_VERSION: 2.12.10
-    - SCALA_VERSION: 2.13.1
+    - SCALA_VERSION: 2.12.15
+    - SCALA_VERSION: 2.13.6
 install:
   - cmd: choco install sbt --version 1.5.5 -ia "INSTALLDIR=""C:\sbt"""
   - cmd: SET PATH=C:\sbt\bin;%JAVA_HOME%\bin;%PATH%
