@@ -93,9 +93,9 @@ lazy val `scalajs-cli`: Project = project.in(file(".")).
     ),
 
     // assembly options
-    mainClass in assembly := None, // don't want an executable JAR
-    assemblyOption in assembly ~= { _.copy(includeScala = false) },
-    assemblyJarName in assembly :=
+    assembly / mainClass := None, // don't want an executable JAR
+    assembly / assemblyOption ~= { _.copy(includeScala = false) },
+    assembly / assemblyJarName :=
       s"${normalizedName.value}-assembly_${scalaBinaryVersion.value}-${scalaJSVersion.value}.jar",
 
     cliLibJars := {
@@ -142,17 +142,17 @@ lazy val `scalajs-cli`: Project = project.in(file(".")).
       cliAssemblyJar +: resolvedLibJars
     },
 
-    target in cliPack := baseDirectory.value / "pack",
-    moduleName in cliPack :=
+    cliPack / target := baseDirectory.value / "pack",
+    cliPack / moduleName :=
       s"scalajs_${scalaBinaryVersion.value}-${scalaJSVersion.value}",
-    crossTarget in cliPack :=
-      (target in cliPack).value / (moduleName in cliPack).value,
+    cliPack / crossTarget :=
+      (cliPack / target).value / (cliPack / moduleName).value,
 
     cliPack := {
       val scalaBinVer = scalaBinaryVersion.value
       val sjsVer = scalaJSVersion.value
 
-      val trg = (crossTarget in cliPack).value
+      val trg = (cliPack / crossTarget).value
       val trgLib = trg / "lib"
       val trgBin = trg / "bin"
 
@@ -166,7 +166,7 @@ lazy val `scalajs-cli`: Project = project.in(file(".")).
       }
 
       IO.createDirectory(trgBin)
-      val scriptDir = (resourceDirectory in Compile).value
+      val scriptDir = (Compile / resourceDirectory).value
       for {
         scriptFile <- IO.listFiles(scriptDir)
         if !scriptFile.getPath.endsWith("~")
