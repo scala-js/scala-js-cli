@@ -128,7 +128,7 @@ object Scalajsld {
         }
         .text("Use compliant asInstanceOfs")
       opt[Unit]("es2015")
-        .action { (_, c) => c.copy(esFeatures = c.esFeatures.withUseECMAScript2015(true)) }
+        .action { (_, c) => c.copy(esFeatures = c.esFeatures.withESVersion(ESVersion.ES2015)) }
         .text("Use ECMAScript 2015")
       opt[ModuleKind]('k', "moduleKind")
         .action { (kind, c) => c.copy(moduleKind = kind) }
