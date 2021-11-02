@@ -8,12 +8,12 @@ environment:
     - SCALA_VERSION: 2.12.10
     - SCALA_VERSION: 2.13.1
 install:
-  - cmd: choco install sbt --version 1.0.2 -ia "INSTALLDIR=""C:\sbt"""
+  - cmd: choco install sbt --version 1.5.5 -ia "INSTALLDIR=""C:\sbt"""
   - cmd: SET PATH=C:\sbt\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: SET SBT_OPTS=-XX:MaxPermSize=2g -Xmx4g
 build: off
 test_script:
-  - cmd: sbt ";clean;++%SCALA_VERSION%;set scalaJSVersion in ThisBuild := \"%SCALAJS_VERSION%\";cliPack"
+  - cmd: sbt ";clean;++%SCALA_VERSION%;set ThisBuild / scalaJSVersion := \"%SCALAJS_VERSION%\";cliPack"
 cache:
   - C:\sbt
   - C:\Users\appveyor\.ivy2\cache
