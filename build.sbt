@@ -14,7 +14,7 @@ inThisBuild(Def.settings(
   version := "1.7.1-SNAPSHOT",
   organization := "org.scala-js",
 
-  crossScalaVersions := Seq("2.12.13", "2.11.12", "2.13.5"),
+  crossScalaVersions := Seq("2.11.12", "2.12.15", "2.13.6"),
   scalaVersion := crossScalaVersions.value.head,
   scalacOptions ++= Seq("-deprecation", "-feature", "-Xfatal-warnings"),
 
@@ -35,12 +35,15 @@ inThisBuild(Def.settings(
     "2.12.11",
     "2.12.12",
     "2.12.13",
+    "2.12.14",
+    "2.12.15",
     "2.13.0",
     "2.13.1",
     "2.13.2",
     "2.13.3",
     "2.13.4",
     "2.13.5",
+    "2.13.6",
   ),
 
   homepage := Some(url("https://www.scala-js.org/")),
