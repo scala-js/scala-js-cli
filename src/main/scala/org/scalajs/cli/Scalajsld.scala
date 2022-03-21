@@ -50,15 +50,16 @@ object Scalajsld {
       logLevel: Level = Level.Info
   )
 
-  private implicit object MainMethodRead extends scopt.Read[ModuleInitializer] {
-    val arity = 1
-    val reads = { (s: String) =>
-      val lastDot = s.lastIndexOf('.')
-      if (lastDot < 0)
-        throw new IllegalArgumentException(s"$s is not a valid main method")
-      ModuleInitializer.mainMethodWithArgs(s.substring(0, lastDot),
-          s.substring(lastDot + 1))
-    }
+  private def moduleInitializer(s: String, hasArgs: Boolean): ModuleInitializer = {
+    val lastDot = s.lastIndexOf('.')
+    if (lastDot < 0)
+      throw new IllegalArgumentException(s"$s is not a valid main method")
+    val className = s.substring(0, lastDot)
+    val mainMethodName = s.substring(lastDot + 1)
+    if (hasArgs)
+      ModuleInitializer.mainMethodWithArgs(className, mainMethodName)
+    else
+      ModuleInitializer.mainMethod(className, mainMethodName)
   }
 
   private implicit object ModuleKindRead extends scopt.Read[ModuleKind] {
@@ -85,12 +86,24 @@ object Scalajsld {
         .unbounded()
         .action { (x, c) => c.copy(cp = c.cp :+ x) }
         .text("Entries of Scala.js classpath to link")
-      opt[ModuleInitializer]("mainMethod")
+      opt[String]("mainMethod")
         .valueName("<full.name.Object.main>")
         .abbr("mm")
         .unbounded()
-        .action { (x, c) => c.copy(moduleInitializers = c.moduleInitializers :+ x) }
+        .action { (x, c) =>
+          val newModule = moduleInitializer(x, hasArgs = true)
+          c.copy(moduleInitializers = c.moduleInitializers :+ newModule)
+        }
         .text("Execute the specified main(Array[String]) method on startup")
+      opt[String]("mainMethodWithNoArgs")
+        .valueName("<full.name.Object.main>")
+        .abbr("mma")
+        .unbounded()
+        .action { (x, c) =>
+          val newModule = moduleInitializer(x, hasArgs = false)
+          c.copy(moduleInitializers = c.moduleInitializers :+ newModule)
+        }
+        .text("Execute the specified main() method on startup")
       opt[File]('o', "output")
         .valueName("<file>")
         .action { (x, c) => c.copy(output = Some(x)) }
